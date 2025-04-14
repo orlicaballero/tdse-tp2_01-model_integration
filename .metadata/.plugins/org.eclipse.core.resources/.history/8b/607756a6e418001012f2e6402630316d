@@ -170,59 +170,61 @@ void task_sensor_update(void *parameters)
 			switch (p_task_sensor_dta->state)
 			{
 				case ST_BTN_XX_UP:
-					if (p_task_sensor_dta->event == EV_BTN_XX_DOWN)
+					if (EV_BTN_XX_DOWN == p_task_sensor_dta->event)
 					{
+						// Transición a FALLING (esperamos confirmación)
 						p_task_sensor_dta->state = ST_BTN_XX_FALLING;
 						p_task_sensor_dta->tick = p_task_sensor_cfg->tick_max;
 					}
-					// EV_BTN_XX_UP → permanece en UP (no hace nada)
 					break;
 
 				case ST_BTN_XX_FALLING:
-					if ((p_task_sensor_dta->event == EV_BTN_XX_DOWN) && (p_task_sensor_dta->tick > 0))
+					if (EV_BTN_XX_DOWN == p_task_sensor_dta->event)
 					{
-						p_task_sensor_dta->tick--;
+						if (p_task_sensor_dta->tick > 0)
+						{
+							p_task_sensor_dta->tick--;
+						}
+						else
+						{
+							// Confirmado botón presionado
+							p_task_sensor_dta->state = ST_BTN_XX_DOWN;
+							put_event_task_system(p_task_sensor_cfg->signal_down);
+						}
 					}
-					else if ((p_task_sensor_dta->event == EV_BTN_XX_DOWN) && (p_task_sensor_dta->tick == 0))
+					else if (EV_BTN_XX_UP == p_task_sensor_dta->event)
 					{
-						p_task_sensor_dta->state = ST_BTN_XX_DOWN;
-						put_event_task_system(p_task_sensor_cfg->signal_down);
-					}
-					else if ((p_task_sensor_dta->event == EV_BTN_XX_UP) && (p_task_sensor_dta->tick > 0))
-					{
-						p_task_sensor_dta->tick--;
-					}
-					else if ((p_task_sensor_dta->event == EV_BTN_XX_UP) && (p_task_sensor_dta->tick == 0))
-					{
+						// Rebote: vuelve a UP
 						p_task_sensor_dta->state = ST_BTN_XX_UP;
 					}
 					break;
 
 				case ST_BTN_XX_DOWN:
-					if (p_task_sensor_dta->event == EV_BTN_XX_UP)
+					if (EV_BTN_XX_UP == p_task_sensor_dta->event)
 					{
+						// Transición a RISING (esperamos confirmación)
 						p_task_sensor_dta->state = ST_BTN_XX_RISING;
 						p_task_sensor_dta->tick = p_task_sensor_cfg->tick_max;
 					}
-					// EV_BTN_XX_DOWN → permanece en DOWN (no hace nada)
 					break;
 
 				case ST_BTN_XX_RISING:
-					if ((p_task_sensor_dta->event == EV_BTN_XX_UP) && (p_task_sensor_dta->tick > 0))
+					if (EV_BTN_XX_UP == p_task_sensor_dta->event)
 					{
-						p_task_sensor_dta->tick--;
+						if (p_task_sensor_dta->tick > 0)
+						{
+							p_task_sensor_dta->tick--;
+						}
+						else
+						{
+							// Confirmado botón soltado
+							p_task_sensor_dta->state = ST_BTN_XX_UP;
+							put_event_task_system(p_task_sensor_cfg->signal_up);
+						}
 					}
-					else if ((p_task_sensor_dta->event == EV_BTN_XX_UP) && (p_task_sensor_dta->tick == 0))
+					else if (EV_BTN_XX_DOWN == p_task_sensor_dta->event)
 					{
-						p_task_sensor_dta->state = ST_BTN_XX_UP;
-						put_event_task_system(p_task_sensor_cfg->signal_up);
-					}
-					else if ((p_task_sensor_dta->event == EV_BTN_XX_DOWN) && (p_task_sensor_dta->tick > 0))
-					{
-						p_task_sensor_dta->tick--;
-					}
-					else if ((p_task_sensor_dta->event == EV_BTN_XX_DOWN) && (p_task_sensor_dta->tick == 0))
-					{
+						// Rebote: vuelve a presionado
 						p_task_sensor_dta->state = ST_BTN_XX_DOWN;
 					}
 					break;
@@ -230,7 +232,6 @@ void task_sensor_update(void *parameters)
 				default:
 					break;
 			}
-
 			///////////////////////////////////////////////////////////
 
 			/*switch (p_task_sensor_dta->state)
